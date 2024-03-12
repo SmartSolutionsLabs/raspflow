@@ -1,8 +1,5 @@
 #include <ArduinoJson.h>
-#import "relay.h"
-#import "AsyncRelay.hpp"
-
-void RelayTaskCode(void* r);
+#import "Relay.hpp"
 
 #define CONNECTION 0
 #define DO 1
@@ -92,12 +89,10 @@ void loop() {
                 id = req["data"]["id"];
                 RelayDelay =req["data"]["delay"];
                 r_uuid = req["data"]["uuid"];
-                  AsyncRelay relay(id,r_uuid);
+                  Relay relay(id,r_uuid);
                   relay.set(req["data"]["set"]);
                   relay.setDelay(req["data"]["delay"]);
                   relay.start();
-                  //~ char task_uuid[4];
-                  //~ itoa(r_uuid,task_uuid,10);
                 req.clear();
                 break;
 			}
@@ -157,27 +152,6 @@ void loop() {
         break;
       }
    }
-}
-
-void RelayTaskCode( void * r) {
-  RelayTimer=millis();
-  Relay relay((Relay*) r);
-  for(;;) {
-    vTaskDelay(1);
-    if(relay.isdone()){
-      RelayDelay=0;
-      RelayTimer=0;
-      res.clear();
-      res["cmd"]  = "status";
-      res["data"]["type"] = RELAY;
-      res["data"]["uuid"] = relay.getuuid();
-      res["data"]["status"] = "ok";
-      //serializeJson(res, Serial);
-      //Serial.println();
-      return;
-    }
-  }
-  vTaskDelay(1);
 }
 
 //{"cmd":1,"data":{"type":"Start","uuid":1}}

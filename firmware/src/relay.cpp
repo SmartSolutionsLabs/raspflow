@@ -1,38 +1,38 @@
-#include "relay.h"
+#include "Relay.hpp"
 
-Relay::Relay(byte pin,int uuid) {
+Relay::Relay(byte pin, int uuid) {
+	Serial.println("new AsyncRelay");
+	taskHandler = nullptr;
 	this->pin = pins[pin];
 	this->uuid = uuid;
 }
 
-Relay::Relay(const Relay *r) {
-	this->pin   = r->pin;
-	this->uuid  = r->uuid;
-	this->delay = r->delay;
-	this->timer = r->timer;
+void Relay::run(void* data) {
+	char UUID[6];
+	itoa(this->_delay, UUID, 10);
+	const uint16_t d = this->_delay;
+	Serial.print("Starting: ");
+	Serial.println(UUID);
+
+	TickType_t xDelay = d / portTICK_PERIOD_MS;
+	//~ while(true) {
+		//~ esp_task_wdt_reset();
+		Serial.println("antes del delay");
+		vTaskDelay(xDelay);
+		Serial.println("despues del delay");
+		//~ break;
+		/*if((xTaskGetTickCount() - this->timer) > this->_delay) {
+			Serial.print("{Miguel}: ");
+			Serial.println(UUID);
+			break;
+		}*/
+	//~ }
+
+	Serial.print("Ending: ");
+	Serial.println(UUID);
+
+	//~ this->stop();
+	//Wait a little before killing task
+	vTaskDelete( NULL );
 }
 
-void Relay::setDelay(int delay) {
-	this->delay = delay;
-}
-
-int Relay::getuuid() {
-	return this->uuid;
-}
-
-void Relay::config() {
-	pinMode(this->pin,OUTPUT);
-}
-
-void Relay::set(byte state) {
-	this->timer = millis();
-	digitalWrite(this->pin,state);
-}
-
-bool Relay::isdone() {
-	if(millis()-timer>this->delay) {
-		return true;
-	}
-
-	return false;
-}

@@ -5,9 +5,9 @@
 
 #include "Module.hpp"
 
-class AsyncRelay : public Module {
+class Relay : public Module {
 	public:
-		AsyncRelay(byte pin, int uuid);
+		Relay(byte pin, int uuid);
 
 		void run(void* data);
 };
