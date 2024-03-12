@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Raspflow</title>
+</head>
+<body>
+	<script src="drawflow/drawflow.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/js/all.min.js" integrity="sha256-KzZiKy0DWYsnwMF+X1DvQngQ2/FxF7MF3Ff72XcpuPs=" crossorigin="anonymous"></script>
+	<link rel="stylesheet" type="text/css" href="drawflow/drawflow.min.css" />
+	<link rel="stylesheet" type="text/css" href="beautiful.css" />
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css" integrity="sha256-h20CPZ0QyXlBuAw7A+KluUYx/3pK+c7lYEpqLTlxjYQ=" crossorigin="anonymous" />
+	<link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@9"></script>
+	<script src="https://unpkg.com/micromodal/dist/micromodal.min.js"></script>
+
+
+	<header id="header">
+		<h2>Raspflow</h2>
+		<div class="github-link"><a href="#"><i class="fab fa-github fa-3x"></i></a></div>
+	</header>
+	<div class="wrapper">
+		<div class="col">
+			<div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="start">
+				<i class="fab fa-hdd"></i><span> Start</span>
+			</div>
+			<div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="end">
+				<i class="fab fa-hdd"></i><span> End</span>
+			</div>
+			<div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="relay">
+				<i class="fab fa-hdd"></i><span> Relay</span>
+			</div>
+			<div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="motor">
+				<i class="fas fa-code-branch"></i><span> Motor</span>
+			</div>
+			<div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="sensor">
+				<i class="fas fa-mouse"></i><span> Sensor</span>
+			</div>
+			<div class="drag-drawflow" draggable="true" ondragstart="drag(event)" data-node="conditional">
+				<i class="fas fa-arrow"></i><span> Conditional</span>
+			</div>
+
+		</div>
+		<div class="col-right">
+			<div class="menu">
+				<ul>
+					<li onclick="editor.changeModule('Home'); changeModule(event);" class="selected">Main</li>
+					<li onclick="editor.changeModule('Other'); changeModule(event);">Other Module</li>
+				</ul>
+			</div>
+			<div id="drawflow" ondrop="drop(event)" ondragover="allowDrop(event)">
+
+				<div class="btn-export" onclick="Swal.fire({ title: 'Export',
+				html: '<pre><code>'+JSON.stringify(editor.export(), null,4)+'</code></pre>'
+				})">Export</div>
+				<div class="btn-clear" onclick="if(!raspflow.playing) editor.clearModuleSelected()">Clear</div>
+				<div class="btn-play">
+					<i id="play" class="fas fa-play-circle" onclick="raspflow.start();"></i>
+					<i id="stopper" class="fas fa-stop" onclick="raspflow.stop();" style="display:none;"></i>
+				</div>
+				<div class="btn-lock">
+					<i id="lock" class="fas fa-lock" onclick="editor.editor_mode='fixed'; changeMode('lock');"></i>
+					<i id="unlock" class="fas fa-lock-open" onclick="editor.editor_mode='edit'; changeMode('unlock');" style="display:none;"></i>
+				</div>
+				<div class="bar-zoom">
+					<i class="fas fa-search-minus" onclick="editor.zoom_out()"></i>
+					<i class="fas fa-search" onclick="editor.zoom_reset()"></i>
+					<i class="fas fa-search-plus" onclick="editor.zoom_in()"></i>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script src="reconnecting-websocket.min.js"></script>
+	<script src="raspflow.js"></script>
+</body>
+</html>

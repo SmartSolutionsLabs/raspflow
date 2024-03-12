@@ -1,0 +1,7 @@
+# Añadir directorio drawflow con los archivos necesarios
+# (https://github.com/jerosoler/Drawflow)
+drawflow/*
+
+# Reconnectiong WebSocket
+# (https://github.com/joewalnes/reconnecting-websocket)
+reconnecting-websocket.min.js
