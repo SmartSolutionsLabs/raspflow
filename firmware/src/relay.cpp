@@ -10,9 +10,18 @@ Relay::Relay(byte pin, int uuid) {
 }
 
 void Relay::run(void* data) {
-	char UUID[6];
-	itoa(this->_delay, UUID, 10);
+	int uuid = this->getUuid();
 	const uint16_t d = this->_delay;
+
+	Serial.println("Will run UUID: ");
+	Serial.println(uuid);
+
+	JsonDocument doc;
+	doc["cmd"] = "status";
+	doc["data"]["type"] = "Relay";
+	doc["data"]["uuid"] = uuid;
+	doc["data"]["status"] = "ok";
+
 
 	TickType_t xDelay = d / portTICK_PERIOD_MS;
 	//~ while(true) {
@@ -25,12 +34,10 @@ void Relay::run(void* data) {
 		}*/
 	//~ }
 
-	JsonDocument doc;
-
-	doc["cmd"]  = "status";
-	doc["data"]["type"] = "Relay";
-	doc["data"]["uuid"] = this->getUuid();
-	doc["data"]["status"] = "ok";
+	Serial.print("Still UUID: ");
+	Serial.print(uuid);
+	Serial.print(" with ");
+	Serial.println(xDelay);
 
 	serializeJson(doc, Serial);
 
