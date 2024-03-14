@@ -2,6 +2,13 @@
 
 int Module::pins[5] = {2, 4, 13, 14, 15};
 
+Module::Module(byte pin, int uuid) {
+	Serial.println("new Module");
+	taskHandler = nullptr;
+	this->pin = pins[pin];
+	this->uuid = uuid;
+}
+
 void Module::runTask(void *_this) {
 	Module * module = (Module *) _this;
 	module->run(_this);

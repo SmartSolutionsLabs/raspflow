@@ -2,11 +2,8 @@
 
 #include <ArduinoJson.h>
 
-Relay::Relay(byte pin, int uuid) {
-	Serial.println("new AsyncRelay");
-	taskHandler = nullptr;
-	this->pin = pins[pin];
-	this->uuid = uuid;
+Relay::Relay(byte pin, int uuid) : Module(pin, uuid) {
+
 }
 
 void Relay::run(void* data) {

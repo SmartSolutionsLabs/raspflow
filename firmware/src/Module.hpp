@@ -20,6 +20,8 @@ class Module {
 		byte pin = 0;
 
 	public:
+		Module(byte pin, int uuid);
+
 		/**
 		 * Accessed with with position index.
 		 */
