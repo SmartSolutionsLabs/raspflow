@@ -1,8 +1,7 @@
 #include <ArduinoJson.h>
-#import "relay.h"
-#import "AsyncRelay.hpp"
-
-void RelayTaskCode(void* r);
+#import "Motor.hpp"
+#import "Relay.hpp"
+#import "Sensor.hpp"
 
 #define CONNECTION 0
 #define DO 1
@@ -29,12 +28,12 @@ unsigned long RelayTimer;
 int id,r_uuid;
 
 void setup() {
-  pinMode(15,OUTPUT);
-  pinMode(2,OUTPUT);
-  digitalWrite(15,LOW);
-  Serial.begin(115200);
-  Serial.flush();
-  realtime = millis();
+	pinMode(15,OUTPUT);
+	pinMode(2,OUTPUT);
+	digitalWrite(15,LOW);
+	Serial.begin(115200);
+	Serial.flush();
+	realtime = millis();
 }
 
 int size_ = 0,tipo;
@@ -44,140 +43,105 @@ unsigned long randomtime =0 ;
 int tr = 0;
 
 void loop() {
-  vTaskDelay(1);
-  if(Serial.available()){
-    payload = Serial.readStringUntil('\n');
-    DeserializationError   error = deserializeJson(req, payload);
-    if (error) {
-      //Serial.println(error.c_str());
-      return;
-    }
-    realtime = millis();
-    command = req["cmd"];
-    //Serial.println(command);
-    switch(command){
-    case CONNECTION:
-        res.clear();
-        res["cmd"] = 0;
-        digitalWrite(2,!digitalRead(2));
-        serializeJson(res, Serial);
-        Serial.println();
-        res.clear();
-        //first_Connection = true;
-      break;
-    case DO:
-        tipo = req["data"]["type"];
-        switch (tipo){
-            case END:
-                res.clear();
-                res["cmd"]  = "status";
-                res["data"]["type"] = req["data"]["type"];
-                res["data"]["uuid"] = req["data"]["uuid"];
-                res["data"]["status"] = "ok";
-                serializeJson(res, Serial);
-                Serial.println();
-                req.clear();req.clear();
-                break;
-            case START:
-                res.clear();
-                res["cmd"]  = "status";
-                res["data"]["type"] = req["data"]["type"];
-                res["data"]["uuid"] = req["data"]["uuid"];
-                res["data"]["status"] = "ok";
-                serializeJson(res, Serial);
-                Serial.println();
-                req.clear();
-                break;
-            case RELAY: {
-                id = req["data"]["id"];
-                RelayDelay =req["data"]["delay"];
-                r_uuid = req["data"]["uuid"];
-                  AsyncRelay relay(id,r_uuid);
-                  relay.set(req["data"]["set"]);
-                  relay.setDelay(req["data"]["delay"]);
-                  relay.start();
-                  //~ char task_uuid[4];
-                  //~ itoa(r_uuid,task_uuid,10);
-                req.clear();
-                break;
+	vTaskDelay(1);
+	if(!Serial.available()) {
+		return;
+	}
+
+	// Is arriving some message. Blink
+	digitalWrite(2,!digitalRead(2));
+	digitalWrite(2,!digitalRead(2));
+
+	payload = Serial.readStringUntil('!');
+
+	// Remove last character of payload
+	payload.remove(payload.length() - 1, 1);
+
+	//~ Serial.print(payload);
+	DeserializationError error = deserializeJson(req, payload);
+	if(error) {
+		Serial.println(payload);
+		return;
+	}
+
+	Serial.println("{\"ok\": 1}");
+
+	realtime = millis();
+	command = req["cmd"];
+	//Serial.println(command);
+	switch(command){
+		case CONNECTION:
+			res.clear();
+			res["cmd"] = 0;
+			digitalWrite(2,!digitalRead(2));
+			serializeJson(res, Serial);
+			Serial.println();
+			res.clear();
+			//first_Connection = true;
+		break;
+		case DO:
+			tipo = req["data"]["type"];
+			switch(tipo) {
+				case END:
+					res.clear();
+					res["cmd"] = "status";
+					res["data"]["type"] = req["data"]["type"];
+					res["data"]["uuid"] = req["data"]["uuid"];
+					res["data"]["status"] = "ok";
+					serializeJson(res, Serial);
+					Serial.println();
+					req.clear();
+					break;
+				case START:
+					res.clear();
+					res["cmd"]  = "status";
+					res["data"]["type"] = req["data"]["type"];
+					res["data"]["uuid"] = req["data"]["uuid"];
+					res["data"]["status"] = "ok";
+					serializeJson(res, Serial);
+					Serial.println();
+					req.clear();
+					break;
+				case RELAY: {
+					Relay relay(req["data"]["id"], req["data"]["uuid"]);
+					relay.set(req["data"]["set"]);
+					relay.setDelay(req["data"]["delay"]);
+					relay.start();
+					req.clear();
+					break;
+				}
+				case SENSOR: {
+					Sensor sensor(req["data"]["id"], req["data"]["uuid"]);
+					sensor.start();
+					req.clear();
+					break;
+				}
+				case MOTOR: {
+					Motor motor(req["data"]["id"], req["data"]["uuid"]);
+					motor.set(req["data"]["set"]);
+					req.clear();
+					break;
+				}
+				default:
+					res.clear();
+					res["cmd"]  = "status";
+					res["data"]["uuid"] = 0;
+					res["data"]["status"] = "pruebalo pues";
+					serializeJson(res, Serial);
+					Serial.println();
+					req.clear();
 			}
-            case MOTOR:
-                if(req["data"]["set"] != ""){
-                  id = req["data"]["id"];
-                  digitalWrite(RelayPin[id],req["data"]["set"]);
-                  res.clear();
-                  res["cmd"]  = "status";
-                  res["data"]["type"] = req["data"]["type"];
-                  res["data"]["uuid"] = req["data"]["uuid"];
-                  res["data"]["status"] = "ok";
-                  serializeJson(res, Serial);
-                  Serial.println();
-                  req.clear();
-                }
-                break;
-            default:
-                res.clear();
-                res["cmd"]  = "status";
-                res["data"]["type"] = "null";
-                res["data"]["uuid"] = 0;
-                res["data"]["status"] = "pruebalo pues";
-                serializeJson(res, Serial);
-                Serial.println();
-                req.clear();
-                break;
-            }
-      break;
-
-      case READ:
-          tipo = req["data"]["type"];
-          if(req["data"]["type"] == SENSOR){
-            if(req["data"]["id"] == 1){
-              if(req["data"]["set"] != ""){
-                digitalWrite(2,req["data"]["set"]);
-                res.clear();
-                res["cmd"]  = "status";
-                res["data"]["type"] = req["data"]["type"];
-                res["data"]["uuid"] = req["data"]["uuid"];
-                res["data"]["status"] = "ok";
-                serializeJson(res, Serial);
-                Serial.println();
-                req.clear();
-              }
-            }
-          }
-        break;
-      default:
-        res.clear();
-        res["cmd"]  = STATUS;
-        res["data"]["type"] = "default";
-        res["data"]["status"] = "WRONG COMMAND";
-        serializeJson(res, Serial);
-        Serial.println();
-        req.clear();
-        break;
-      }
-   }
-}
-
-void RelayTaskCode( void * r) {
-  RelayTimer=millis();
-  Relay relay((Relay*) r);
-  for(;;) {
-    vTaskDelay(1);
-    if(relay.isdone()){
-      RelayDelay=0;
-      RelayTimer=0;
-      res.clear();
-      res["cmd"]  = "status";
-      res["data"]["type"] = RELAY;
-      res["data"]["uuid"] = relay.getuuid();
-      res["data"]["status"] = "ok";
-      //serializeJson(res, Serial);
-      //Serial.println();
-      return;
-    }
-  }
-  vTaskDelay(1);
+			break;
+		default:
+			res.clear();
+			res["cmd"] = STATUS;
+			res["data"]["type"] = "default";
+			res["data"]["status"] = "WRONG COMMAND";
+			serializeJson(res, Serial);
+			Serial.println();
+			req.clear();
+			break;
+	}
 }
 
 //{"cmd":1,"data":{"type":"Start","uuid":1}}

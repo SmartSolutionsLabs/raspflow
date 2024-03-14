@@ -1,38 +1,44 @@
-#include "relay.h"
+#include "Relay.hpp"
 
-Relay::Relay(byte pin,int uuid) {
-	this->pin = pins[pin];
-	this->uuid = uuid;
+#include <ArduinoJson.h>
+
+Relay::Relay(byte pin, int uuid) : Module(pin, uuid) {
+
 }
 
-Relay::Relay(const Relay *r) {
-	this->pin   = r->pin;
-	this->uuid  = r->uuid;
-	this->delay = r->delay;
-	this->timer = r->timer;
-}
+void Relay::run(void* data) {
+	int uuid = this->getUuid();
+	const uint16_t d = this->_delay;
 
-void Relay::setDelay(int delay) {
-	this->delay = delay;
-}
+	Serial.println("Will run UUID: ");
+	Serial.println(uuid);
 
-int Relay::getuuid() {
-	return this->uuid;
-}
+	JsonDocument doc;
+	doc["cmd"] = "status";
+	doc["data"]["type"] = "Relay";
+	doc["data"]["uuid"] = uuid;
+	doc["data"]["status"] = "ok";
 
-void Relay::config() {
-	pinMode(this->pin,OUTPUT);
-}
 
-void Relay::set(byte state) {
-	this->timer = millis();
-	digitalWrite(this->pin,state);
-}
+	TickType_t xDelay = d / portTICK_PERIOD_MS;
+	//~ while(true) {
+		//~ Serial.println("antes del delay");
+		vTaskDelay(xDelay);
+		//~ Serial.println("despues del delay");
+		//~ break;
+		/*if((xTaskGetTickCount() - this->timer) > this->_delay) {
+			break;
+		}*/
+	//~ }
 
-bool Relay::isdone() {
-	if(millis()-timer>this->delay) {
-		return true;
-	}
+	Serial.print("Still UUID: ");
+	Serial.print(uuid);
+	Serial.print(" with ");
+	Serial.println(xDelay);
 
-	return false;
+	serializeJson(doc, Serial);
+
+	//~ this->stop();
+	//Wait a little before killing task
+	vTaskDelete( NULL );
 }

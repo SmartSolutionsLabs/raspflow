@@ -1,5 +1,7 @@
 const testLocal = false
 
+const inputs = new Array(5);
+
 const blockPattern = {
 	"delay": {
 		"type": -2,
@@ -573,7 +575,7 @@ class Raspflow {
 						this.#ws.send(JSON.stringify(payload))
 					}
 					else {
-						debugger
+						//~ debugger
 						this.#traverseChildNodes(output)
 					}
 				}
@@ -609,6 +611,7 @@ class Raspflow {
 	handleRemoteAnswer(answer) {
 		let data
 		try {
+			console.log(answer.data)
 			data = JSON.parse(answer.data)
 		}
 		catch(e) {
@@ -621,6 +624,9 @@ class Raspflow {
 				//~ debugger
 				if(this.#playing) {
 					if(data.data.uuid) {
+						if(data.data.type == "Sensor") {
+							inputs[data.data.id] = data.data.value
+						}
 						this.#traverseChildNodes( editor.getNodeFromId(data.data.uuid) )
 					}
 					else {
@@ -632,7 +638,7 @@ class Raspflow {
 				console.info("hold")
 				break
 			default:
-				debugger
+				//~ debugger
 		}
 	}
 

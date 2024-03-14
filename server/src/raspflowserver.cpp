@@ -1,7 +1,9 @@
 // g++ -o server -I include raspflowserver.cpp lib/libserialport.dll.a lib/libwebsockets.dll.a
+#define LIBSERIALPORT_DEBUG
 
 #include <thread>
 #include <algorithm>
+#include <iostream>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +21,7 @@ sp_return result;
 std::string messageBuffer;
 
 // Nombre del puerto serie (ajusta según tu configuración)
-const char *port_name = "COM4";  // Reemplaza con tu puerto serie
+const char *port_name = "COM5";  // Reemplaza con tu puerto serie
 
 
 // Global for WS
@@ -95,10 +97,18 @@ static int callback_ws(struct lws *wsi, enum lws_callback_reasons reason, void *
 				}
 
 				printf("Mensaje WS capturado: %s\n", completeMessage->c_str());
+				completeMessage->append("!");
 
 				// Send to serial port
 				unsigned int timeout = 1000;
 				result = sp_blocking_write(port, completeMessage->c_str(), completeMessage->length(), timeout);
+				if(result != completeMessage->length()) {
+					std::cout << "Result sending out serial: " << result << std::endl;
+					std::cerr << "Error writing to serial port: " << sp_last_error_message() << std::endl;
+				}
+				else {
+					std::cout << "\tMessage " << *completeMessage << " sent to serial port." << std::endl;
+				}
 			}
 			break;
 		}
@@ -126,6 +136,11 @@ void runSerial() {
 		//~ return 1;
 	}
 
+	sp_set_baudrate(port, 115200);
+	sp_set_bits(port, 8);
+	sp_set_parity(port, SP_PARITY_NONE);
+	sp_set_stopbits(port, 1);
+
 	//
 	//~ char serialTemporalBuffer[2048];
 	//~ result = sp_blocking_read(port, serialTemporalBuffer, sizeof(serialTemporalBuffer), 0);  // Lee datos del puerto serie
@@ -137,9 +152,10 @@ void runSerial() {
 	// Buffer para acumular el contenido entre iteraciones
 	std::string buffer;
 
+	char serialBuffer[128];  // Tamaño del búfer para almacenar los datos recibidos
+
 	// Bucle para leer mensajes
 	while(1 && !interrupted) {
-		char serialBuffer[128];  // Tamaño del búfer para almacenar los datos recibidos
 		result = sp_blocking_read(port, serialBuffer, sizeof(serialBuffer), 0);  // Lee datos del puerto serie
 
 		//~ if(SP_OK != result) {
@@ -168,7 +184,7 @@ void runSerial() {
 					std::string contenido = combinedText.substr(currentStartPos, endPos - currentStartPos - 1);
 
 					// Imprime el contenido
-					printf("\n\nContenido de longitud %d extraído: %s", contenido.length(), contenido.c_str());
+					printf("\n\nSerial contenido de longitud %d extraído: %s", contenido.length(), contenido.c_str());
 					// Catch all and resend it.
 					if(mainWebsocketConnection) {
 						char buf[LWS_PRE + contenido.length()];
@@ -239,4 +255,29 @@ int main() {
 	websocketThread.join();
 
 	return 0;
+}
+
+// Callback function for receiving serial data
+void receiveDataCallback(struct sp_port *port, void *user_data) {
+	static std::string receivedData;  // Static variable to store received data
+	char buffer[512];  // Buffer to read incoming data
+	int bytes_read;
+
+	// Read incoming data
+	bytes_read = sp_nonblocking_read(port, buffer, sizeof(buffer));
+
+	if (bytes_read > 0) {
+		// Append the received data to the buffer
+		receivedData.append(buffer, bytes_read);
+
+		// Check if the received data contains the end delimiter
+		size_t endPos = receivedData.find("\n");
+		if (endPos != std::string::npos) {
+			// Print the complete message
+			std::cout << "Received message: " << receivedData.substr(0, endPos) << std::endl;
+
+			// Clear the received data buffer
+			receivedData.clear();
+		}
+	}
 }
